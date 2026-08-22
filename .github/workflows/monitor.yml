@@ -3,7 +3,7 @@ name: Monitor estoque ABECMED
 on:
   schedule:
     # Roda a cada 5 minutos (GitHub pode atrasar um pouco em horários de pico)
-    - cron: "*/5 * * * *"
+    - cron: "* * * * *"
   workflow_dispatch: {} # permite rodar manualmente pelo botão "Run workflow"
 
 permissions:
