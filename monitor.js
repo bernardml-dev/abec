@@ -163,7 +163,14 @@ async function main() {
 
 main().catch(async (err) => {
   console.error("Erro:", err);
-  // Opcional: descomente a linha abaixo se quiser ser avisado quando o script falhar
-  // await sendTelegram(`⚠️ Erro no monitor da ABECMED: ${err.message}`);
+  try {
+    await sendTelegram(
+      `⚠️ <b>O monitor da ABECMED parou de funcionar.</b>\n\n` +
+        `Provavelmente o fluxo do chat mudou (nova pergunta, novo botão, etc).\n\n` +
+        `Erro técnico: ${err.message}`
+    );
+  } catch (telegramErr) {
+    console.error("Além do erro original, falhou ao avisar no Telegram:", telegramErr);
+  }
   process.exit(1);
 });
