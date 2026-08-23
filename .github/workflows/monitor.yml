@@ -4,7 +4,7 @@ on:
   schedule:
     # Roda a cada 1 minuto (mínimo possível no GitHub Actions;
     # o GitHub pode atrasar um pouco em horários de pico)
-    - cron: "* * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch: {} # permite rodar manualmente pelo botão "Run workflow"
 
 permissions:
