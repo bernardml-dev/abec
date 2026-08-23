@@ -2,10 +2,19 @@ name: Monitor estoque ABECMED
 
 on:
   schedule:
-    # Roda a cada 1 minuto (mínimo possível no GitHub Actions;
-    # o GitHub pode atrasar um pouco em horários de pico)
-    - cron: "*/5 * * * *"
+    # Acorda a cada 2 horas. Uma vez acordado, o script (monitor-loop.js) fica
+    # rodando sozinho por ~1h55, checando a cada 1 minuto — não depende mais
+    # do agendador do GitHub pra cada checagem individual, só pra "religar"
+    # o processo periodicamente.
+    - cron: "0 */2 * * *"
   workflow_dispatch: {} # permite rodar manualmente pelo botão "Run workflow"
+
+# Evita que duas execuções rodem ao mesmo tempo (o que poderia causar conflito
+# ao salvar o estado). Se uma nova execução tentar começar enquanto a anterior
+# ainda está rodando, ela espera a anterior terminar.
+concurrency:
+  group: monitor-abecmed
+  cancel-in-progress: false
 
 permissions:
   contents: write # necessário para o bot poder salvar o state.json de volta no repo
@@ -13,6 +22,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 130 # margem de segurança acima dos ~115 min do loop interno
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
@@ -22,28 +32,15 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Rodar o monitor de flores
-        env:
-          ABEC_CPF: ${{ secrets.ABEC_CPF }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: node monitor.js
-
-      - name: Rodar o monitor de concentrados
-        env:
-          ABEC_CPF: ${{ secrets.ABEC_CPF }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: node monitor-concentrados.js
-
-      - name: Salvar estado atualizado
+      - name: Configurar git para commits automáticos
         run: |
           git config --global user.name "abecmed-monitor-bot"
           git config --global user.email "actions@github.com"
-          if ! git diff --quiet -- state.json state-concentrados.json; then
-            git add state.json state-concentrados.json
-            git commit -m "Atualiza estado do estoque [skip ci]"
-            git push
-          else
-            echo "Nada mudou nos arquivos de estado"
-          fi
+
+      - name: Rodar o loop de monitoramento (~1h55)
+        env:
+          ABEC_CPF: ${{ secrets.ABEC_CPF }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          LOOP_MINUTES: "115"
+        run: node monitor-loop.js
