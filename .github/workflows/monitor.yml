@@ -6,7 +6,7 @@ on:
     # rodando sozinho por ~1h55, checando a cada 1 minuto — não depende mais
     # do agendador do GitHub pra cada checagem individual, só pra "religar"
     # o processo periodicamente.
-    - cron: "0 */2 * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch: {} # permite rodar manualmente pelo botão "Run workflow"
 
 # Evita que duas execuções rodem ao mesmo tempo (o que poderia causar conflito
